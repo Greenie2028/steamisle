@@ -1,3 +1,5 @@
+.vscode/
+
 # Prerequisites
 *.d
 
@@ -40,5 +42,7 @@
 # debug information files
 *.dwo
 
+
+# For testing purposes
 steamisle.cpp
-.vscode/
+*.txt
