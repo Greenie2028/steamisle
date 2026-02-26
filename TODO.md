@@ -1,0 +1,2 @@
+- Use html library to access Google Sheet as a CSV file
+- Learn to access User Steam Lib from Steam API
