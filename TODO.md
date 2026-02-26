@@ -11,3 +11,4 @@
 - - Unstable
 - - Broken
 - Within each category sorted alphabetically (0-Z)
+- Add ability to use UserId or Profile Link
