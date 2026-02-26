@@ -1,5 +1,5 @@
 # Archipelago Steam Reader
 Usage:
 ```
-./steamisle {steamUserId} {spreadSheet.url}
+./steamisle {steamUserId} {spreadSheet.url} {output.file}
 ```
