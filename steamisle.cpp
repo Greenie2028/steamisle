@@ -41,6 +41,13 @@ struct Game {
     string status;
 };
 
+void pauseExit(int code) {
+    cout << "\nPress Enter to exit...";
+    cin.ignore(numeric_limits<std::streamsize>::max(), '\n');
+    cin.get();
+    exit(code);
+}
+
 bool fileExists(const string& fileName) { // Checks if given file name already exists
     return fs::exists(fileName);
 }
@@ -420,7 +427,7 @@ int main(int argc, char* argv[]) {
     }
     else if (argc != 2) {
         cerr << "ERROR: Invalid Usage. Proper Usage: ./steamisle {steamUserId}" << endl;
-        return 1;
+        pauseExit(1);
     }
 
     string user_id;
@@ -440,12 +447,12 @@ int main(int argc, char* argv[]) {
     
     if (formatted_core == "") {
         cerr << "ERROR: Failed to format core_worlds url." << endl;
-        return 1;
+        pauseExit(1);
     }
 
     if (formatted_playable == "") {
         cerr << "ERROR: Failed to format playable_worlds url." << endl;
-        return 1;
+        pauseExit(1);
     }
 
     cout << "Fetching Core Worlds CSV..." << endl;
@@ -459,7 +466,7 @@ int main(int argc, char* argv[]) {
     if (config.find("api_key") == config.end() || config["api_key"] == "") { // TODO: Add in if template was not changed
         cerr << "ERROR: No API key found in steamisle.cfg" << endl;
         cerr << "Get a key at: https://steamcommunity.com/dev/apikey" << endl;
-        return 1;
+        pauseExit(1);
     }
     string api_key = config["api_key"];
 
@@ -468,7 +475,7 @@ int main(int argc, char* argv[]) {
     string username = getSteamUsername(user_id, api_key);
     if (username == "") {
         cerr << "ERROR: Steam ID " << user_id << " not found or profile is private." << endl;
-        return 1;
+        pauseExit(1);
     }
 
     cout << "Found user: " << username << endl;
@@ -478,7 +485,7 @@ int main(int argc, char* argv[]) {
     vector<string> library = getSteamLibrary(user_id, api_key);
     if (library.empty()) {
         cerr << "ERROR: Could not fetch Steam Library. Profile or game list may be private." << endl;
-        return 1;
+        pauseExit(1);
     }
 
     cout << "Found " << library.size() << " games in library." << endl;
@@ -498,13 +505,13 @@ int main(int argc, char* argv[]) {
     string outfile_name = username + ".txt";
     outfile_name = validateFile(outfile_name);
     if (outfile_name == "") {
-        return 0;
+        pauseExit(0);
     }
 
     ofstream outfile(outfile_name);
     if (!outfile.is_open()) {
         cerr << "ERROR: Could not open output file: " << outfile_name << endl;
-        return 1;
+        pauseExit(1);
     }
 
     outfile << "Archipelago Games for " << username << "\n";
@@ -522,5 +529,5 @@ int main(int argc, char* argv[]) {
 
     outfile.close();
     cout  << "Results saved to " << outfile_name << endl;
-    return 0;
+    pauseExit(0);
 }
