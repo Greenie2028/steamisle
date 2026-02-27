@@ -43,7 +43,7 @@ struct Game {
 
 void pauseExit(int code) {
     cout << "\nPress Enter to exit...";
-    cin.ignore(numeric_limits<std::streamsize>::max(), '\n');
+    cin.clear();
     cin.get();
     exit(code);
 }
