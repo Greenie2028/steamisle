@@ -13,6 +13,9 @@ using std::vector;
 #include <map>
 using std::map;
 
+#include <set>
+using std::set;
+
 #include <sstream>
 using std::istringstream;
 
@@ -270,7 +273,7 @@ vector<string> parseCSVLine(const string& line) { // Has to handle commas within
     for (int i = 0; i < line.size(); i++) {
         char c = line[i];
 
-        if (c = '"') {
+        if (c == '"') {
             if (inQuotes && i + 1 < line.size() && line[i+1] == '"') {
                 field += '"'; // Add single quote
                 i++; // Avoid double quotes
@@ -352,6 +355,63 @@ vector<Game> parsePlayableCSV(const string& csv) {
     return games;
 }
 
+string toLower(const string& str) {
+    string lower = str;
+    transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
+    return lower;
+}
+
+string normalizeForMatching(const string& name) {
+    vector<string> suffixes = {
+        " - Beta APWorld",
+        " (Progression Lock)",
+        " (TABS)"
+    };
+
+    for (const string& suffix : suffixes) { // Removing suffixes for matching
+        if (name.size() >= suffix.size() && name.substr(name.size() - suffix.size()) == suffix) {
+            return name.substr(0, name.size() - suffix.size());
+        }
+    }
+
+    return name;
+}
+
+int statusPriority(const string& status) {
+    if (status == "Core-Verified") return 0;
+    if (status == "APWorld Only")  return 1;
+    if (status == "Merged")        return 2;
+    if (status == "In Review")     return 3;
+    if (status == "Stable")        return 4;
+    if (status == "Unstable")      return 5;
+    if (status == "Broken on Main")        return 6;
+    return 7;
+}
+
+vector<Game> matchGames(const vector<Game>& archipelago_games, const vector<string>& library) {
+    set<string> librarySet;
+    for (const string& game : library) {
+        librarySet.insert(toLower(game));
+    }
+
+    vector<Game> matches;
+    for (const Game& game : archipelago_games) {
+        string normalized = normalizeForMatching(game.name);
+        if (librarySet.count(toLower(normalized))) {
+            matches.push_back(game);
+        }
+    }
+
+    sort(matches.begin(), matches.end(), [](const Game& a, Game& b) {
+        int pa = statusPriority(a.status);
+        int pb = statusPriority(b.status);
+        if (pa != pb) return pa < pb; // Sort by status
+        return toLower(a.name) < toLower(b.name); // Same status, sort alphabetically
+    });
+
+    return matches;
+}
+
 int main(int argc, char* argv[]) {
 
     bool cmd_line = true;
@@ -429,11 +489,45 @@ int main(int argc, char* argv[]) {
 
     cout << "Found " << library.size() << " games in library." << endl;
 
-    // Pull CSV Data From Sheet
+    // Parse both CSVs into Game objects
+    vector<Game> coreGames = parseCoreCSV(csv_core);
+    vector<Game> playableGames = parsePlayableCSV(csv_playable);
 
-    // Compare Library and Sheet
+    // Combine vectors and cross-reference with library
+    vector<Game> allArchipelagoGames;
+    for (const Game& g : coreGames) allArchipelagoGames.push_back(g);
+    for (const Game& g : playableGames) allArchipelagoGames.push_back(g);
 
-    // Format and Output Data to Output File
+    vector<Game> matches = matchGames(allArchipelagoGames, library);
+    cout << "Found " << matches.size() << " Archipelago Games in your library." << endl;
+
+    string outfile_name = username + ".txt";
+    outfile_name = validateFile(outfile_name);
+    if (outfile_name == "") {
+        return 0;
+    }
+
+    ofstream outfile(outfile_name);
+    if (!outfile.is_open()) {
+        cerr << "ERROR: Could not open output file: " << outfile_name << endl;
+        return 1;
+    }
+
+    outfile << "Archipelago Games for " << username << "\n";
+    outfile << "Total: " << matches.size() << " games\n";
+    outfile << "========================================\n\n";
+
+    string current_status = "";
+    for (const Game& g : matches) {
+        if (g.status != current_status) {
+            current_status = g.status;
+            outfile << "\n[" << current_status << "]\n";
+        }
+        outfile << " " << g.name << "\n";
+    }
+
+    outfile.close();
+    cout  << "Results saved to " << outfile_name << endl;
 
     return 0;
 }
