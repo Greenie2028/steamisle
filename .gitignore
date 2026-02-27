@@ -45,4 +45,6 @@
 
 # For testing purposes
 # steamisle.cpp
+notes.md
 *.txt
+steamisle.cfg
