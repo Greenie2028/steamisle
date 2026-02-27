@@ -418,27 +418,21 @@ int main(int argc, char* argv[]) {
     if (argc == 1) {
         cmd_line = false;
     }
-    else if (argc != 4) {
-        cerr << "ERROR: Invalid Usage. Proper Usage: ./steamisle {steamUserId} {playableWorldsURL} {coreWorldsURL}" << endl;
+    else if (argc != 2) {
+        cerr << "ERROR: Invalid Usage. Proper Usage: ./steamisle {steamUserId}" << endl;
         return 1;
     }
 
     string user_id;
-    string core_world_url;
-    string playable_url;
+    string core_world_url = "https://docs.google.com/spreadsheets/d/1iuzDTOAvdoNe8Ne8i461qGNucg5OuEoF-Ikqs8aUQZw/edit?gid=1675722515#gid=1675722515";
+    string playable_url = "https://docs.google.com/spreadsheets/d/1iuzDTOAvdoNe8Ne8i461qGNucg5OuEoF-Ikqs8aUQZw/edit?gid=58422002#gid=58422002";
 
     if (cmd_line) {
         user_id = string(argv[1]);
-        core_world_url = string(argv[2]);
-        playable_url = string(argv[3]);
     }
     else {
         cout << "Enter User's Steam Id: ";
         cin >> user_id;
-        cout << "Enter Archipelago Core Worlds Google Sheet URL: ";
-        cin >> core_world_url;
-        cout << "Enter Archipelago Playable Worlds Google Sheet URL: ";
-        cin >> playable_url;
     }
 
     string formatted_core = buildURL(core_world_url);
@@ -462,7 +456,7 @@ int main(int argc, char* argv[]) {
 
 
     map<string, string> config = loadConfig("steamisle.cfg");
-    if (config.find("api_key") == config.end() || config["api_key"] == "") {
+    if (config.find("api_key") == config.end() || config["api_key"] == "") { // TODO: Add in if template was not changed
         cerr << "ERROR: No API key found in steamisle.cfg" << endl;
         cerr << "Get a key at: https://steamcommunity.com/dev/apikey" << endl;
         return 1;
