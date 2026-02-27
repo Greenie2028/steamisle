@@ -7,6 +7,9 @@ using std::ifstream, std::ofstream;
 #include <string>
 using std::string, std::getline;
 
+#include <vector>
+using std::vector;
+
 #include <filesystem>
 namespace fs = std::filesystem;
 
@@ -166,6 +169,54 @@ string fetchURL(const string& url) {
 
     curl_easy_cleanup(curl);
     return response;
+}
+
+
+// Validates Steam ID and returns user's display name
+string getSteamUsername(const string& user_id, const string& api_key) {
+    string url = "https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v2/?key="
+    + api_key + "&steamids=" + user_id;
+
+    string response = fetchURL(url);
+
+    if (response == "") {
+        return "";
+    }
+
+    json data = json::parse(response);
+
+    if (data["repsonse"]["players"].empty()) { // Steam ID does not exist
+        cerr << "ERROR: Steam Id does not exist." << endl;
+        return "";
+    }
+
+    return data["response"]["players"].at(0)["personaname"]; // Returns user display name
+}
+
+vector<string> getSteamLibrary(const string& user_id, const string& api_key) {
+    string url = "https://api.steampowered.com/IPlayerService/GetOwnedGames/v1/?key="
+    + api_key + "&steamid=" + user_id + "&include_appinfo=true" // Include game names, not just game ids
+    + "&include_played_free_games=true"; // Include free games
+
+    string response = fetchURL(url);
+    if (response == "") {
+        cerr << "ERROR: Failed to fetch Steam Library." << endl;
+        return {}; // On failure returns an empty vector
+    }
+
+    json data = json::parse(response);
+
+    if(!data["response"].contains("games")) {
+        cerr << "ERROR: Failed to fetch games. Account is most likely privated." << endl;
+        return {};
+    }
+
+    vector<string> library;
+    for (const auto& game : data["response"]["games"]) {
+        library.push_back(game["name"]);
+    }
+
+    return library;
 }
 
 int main(int argc, char* argv[]) {
