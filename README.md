@@ -7,9 +7,9 @@ Used to compile all games from a given users steam library into a single text do
 To run SteamIsle you need 
 - steamisle executable
 - Steam Web API Key
-- - This can be acquired for free at https://steamcommunity.com/dev/apikey using the domain name "localhost".
+  - This can be acquired for free at https://steamcommunity.com/dev/apikey using the domain name "localhost".
 - steamisle.cfg
-- - Install steamisle.cfg.template, rename the file and replace YOUR_API_KEY with the key acquired above.
+  - Install steamisle.cfg.template, rename the file and replace YOUR_API_KEY with the key acquired above.
 
 
 Usage:
