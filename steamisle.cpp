@@ -13,6 +13,9 @@ using std::vector;
 #include <map>
 using std::map;
 
+#include <sstream>
+using std::istringstream;
+
 #include <filesystem>
 namespace fs = std::filesystem;
 
@@ -29,6 +32,11 @@ using std::this_thread::sleep_for;
 
 #include <nlohmann/json.hpp>
 using json = nlohmann::json;
+
+struct Game {
+    string name;
+    string status;
+};
 
 bool fileExists(const string& fileName) { // Checks if given file name already exists
     return fs::exists(fileName);
@@ -202,8 +210,6 @@ string getSteamUsername(const string& user_id, const string& api_key) {
     + api_key + "&steamids=" + user_id;
 
     string response = fetchURL(url);
-
-    cout << "DEBUG Steam response: " << response << endl;
     
     if (response == "") {
         return "";
@@ -256,6 +262,96 @@ vector<string> getSteamLibrary(const string& user_id, const string& api_key) {
     return library;
 }
 
+vector<string> parseCSVLine(const string& line) { // Has to handle commas within quoted fields
+    vector<string> fields;
+    string field;
+    bool inQuotes = false; // Handling internal quoted fields
+
+    for (int i = 0; i < line.size(); i++) {
+        char c = line[i];
+
+        if (c = '"') {
+            if (inQuotes && i + 1 < line.size() && line[i+1] == '"') {
+                field += '"'; // Add single quote
+                i++; // Avoid double quotes
+            }
+            else {
+                inQuotes = !inQuotes;
+            }
+        }
+
+        else if (c == ',' && !inQuotes) { // Handling stray commas
+            fields.push_back(field);
+            field.clear();
+        }
+
+        else { // All other characters
+            field += c;
+        }
+    }
+
+    fields.push_back(field);
+    return fields;
+}
+
+vector<vector<string>> parseCSV(const string& csv) {
+    vector<vector<string>> rows;
+    string line;
+    bool inQuotes = false;
+
+    for (char c : csv) {
+        if (c == '"') {
+            inQuotes = !inQuotes;
+            line += c;
+        }
+        else if (c == '\n' && !inQuotes) { // Handling internal new lines
+            if(!line.empty()) {
+                rows.push_back(parseCSVLine(line));
+                line.clear();
+            }
+        }
+        else {
+            line += c;
+        } 
+    }
+
+    if (!line.empty()) {    // Catches final line if file doesn't end with \n
+        rows.push_back(parseCSVLine(line));
+    }
+
+    return rows;
+}
+
+vector<Game> parseCoreCSV(const string& csv) { // Parsing Core Worlds
+    vector<vector<string>> rows = parseCSV(csv);
+    vector<Game> games;
+
+
+    // Row 0 is Note, Row 1 is Headers
+    // Data starts on Row 2
+    for (int i = 2; i < rows.size(); i++) {
+        if (rows[i].empty() || rows[i][0].empty()) continue;
+        games.push_back({rows[i][0], "Core-Verified"});
+    }
+
+    return games;
+}
+
+vector<Game> parsePlayableCSV(const string& csv) {
+    vector<vector<string>> rows = parseCSV(csv);
+    vector<Game> games;
+
+    // Rows 0-3 are instructions, 4 is headers
+    // Data starts on row 5
+    for (int i = 5; i < rows.size(); i++) {
+        if (rows[i].empty() || rows[i][0].empty()) continue;
+        if (rows[i].size() < 2) continue;
+        games.push_back({rows[i][0], rows[i][1]}); // Name is at 0, status is at 1
+    }
+
+    return games;
+}
+
 int main(int argc, char* argv[]) {
 
     bool cmd_line = true;
@@ -273,8 +369,8 @@ int main(int argc, char* argv[]) {
 
     if (cmd_line) {
         user_id = string(argv[1]);
-        playable_url = string(argv[2]);
-        core_world_url = string(argv[3]);
+        core_world_url = string(argv[2]);
+        playable_url = string(argv[3]);
     }
     else {
         cout << "Enter User's Steam Id: ";
