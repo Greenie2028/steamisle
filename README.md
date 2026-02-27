@@ -1,6 +1,6 @@
 # Archipelago Steam Reader
 Usage:
 ```
-./steamisle {steamUserId} {spreadSheet.url}
+./steamisle {steamId} {spreadSheet1URL} {spreadsheet2URL}
 ```
-Returns a file named {steamUserId}.txt
+Returns a file named {steamUsername}.txt
