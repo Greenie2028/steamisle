@@ -10,6 +10,9 @@ using std::string, std::getline;
 #include <vector>
 using std::vector;
 
+#include <map>
+using std::map;
+
 #include <filesystem>
 namespace fs = std::filesystem;
 
@@ -171,6 +174,27 @@ string fetchURL(const string& url) {
     return response;
 }
 
+map<string, string> loadConfig(const string& filename) {
+    map<string, string> config;
+    ifstream file(filename);
+
+    if (!file.is_open()) {
+        cerr << "ERROR: Failed to open config file: " << filename << endl;
+        return config;
+    }
+
+    string line;
+    while (getline(file, line)) {
+        size_t eq = line.find('=');
+        if (eq == string::npos) continue;
+
+        string key = line.substr(0, eq);
+        string value = line.substr(eq + 1);
+        config[key] = value;
+    }
+
+    return config;
+}
 
 // Validates Steam ID and returns user's display name
 string getSteamUsername(const string& user_id, const string& api_key) {
@@ -179,18 +203,27 @@ string getSteamUsername(const string& user_id, const string& api_key) {
 
     string response = fetchURL(url);
 
+    cout << "DEBUG Steam response: " << response << endl;
+    
     if (response == "") {
         return "";
     }
 
-    json data = json::parse(response);
+    json data;
 
-    if (data["repsonse"]["players"].empty()) { // Steam ID does not exist
-        cerr << "ERROR: Steam Id does not exist." << endl;
+    try {
+        data = json::parse(response);
+    } catch (const json::parse_error& e) {
+        cerr << "ERROR: Failed to parse Steam response: " << e.what() << endl;
+        return "";
+    }
+    
+
+    if (data["response"]["players"].empty()) { // Steam ID does not exist
         return "";
     }
 
-    return data["response"]["players"].at(0)["personaname"]; // Returns user display name
+    return data["response"]["players"].at(0)["personaname"].get<string>(); // Returns user display name
 }
 
 vector<string> getSteamLibrary(const string& user_id, const string& api_key) {
@@ -200,20 +233,24 @@ vector<string> getSteamLibrary(const string& user_id, const string& api_key) {
 
     string response = fetchURL(url);
     if (response == "") {
-        cerr << "ERROR: Failed to fetch Steam Library." << endl;
         return {}; // On failure returns an empty vector
     }
 
-    json data = json::parse(response);
+    json data;
+    try {
+        data = json::parse(response);
+    } catch (const json::parse_error& e) {
+        cerr << "Failed to parse Steam response: " << e.what() << endl;
+        return {};
+    }
 
     if(!data["response"].contains("games")) {
-        cerr << "ERROR: Failed to fetch games. Account is most likely privated." << endl;
         return {};
     }
 
     vector<string> library;
     for (const auto& game : data["response"]["games"]) {
-        library.push_back(game["name"]);
+        library.push_back(game["name"].get<string>());
     }
 
     return library;
@@ -231,7 +268,6 @@ int main(int argc, char* argv[]) {
     }
 
     string user_id;
-    string username; // This will be initialized as the Steam Username used for filenaming
     string core_world_url;
     string playable_url;
 
@@ -269,17 +305,33 @@ int main(int argc, char* argv[]) {
     string csv_playable = fetchURL(formatted_playable);
 
 
-    /* TODO: Grab username from steam data
-    string outfile_name = (user_id + ".txt");
-    outfile_name = validateFile(outfile_name);
-
-    if (outfile_name == "") {
-        return 0;
+    map<string, string> config = loadConfig("steamisle.cfg");
+    if (config.find("api_key") == config.end() || config["api_key"] == "") {
+        cerr << "ERROR: No API key found in steamisle.cfg" << endl;
+        cerr << "Get a key at: https://steamcommunity.com/dev/apikey" << endl;
+        return 1;
     }
-    */
-    // Validate Steam User
-    
-    // Pull Steam User Library Information
+    string api_key = config["api_key"];
+
+    // Validating Steam User and fetching username
+    cout << "Looking up Steam user..." << endl;
+    string username = getSteamUsername(user_id, api_key);
+    if (username == "") {
+        cerr << "ERROR: Steam ID " << user_id << " not found or profile is private." << endl;
+        return 1;
+    }
+
+    cout << "Found user: " << username << endl;
+
+    // Fetching Steam Library
+    cout << "Fetching Steam library for " << username << "..." << endl;
+    vector<string> library = getSteamLibrary(user_id, api_key);
+    if (library.empty()) {
+        cerr << "ERROR: Could not fetch Steam Library. Profile or game list may be private." << endl;
+        return 1;
+    }
+
+    cout << "Found " << library.size() << " games in library." << endl;
 
     // Pull CSV Data From Sheet
 
