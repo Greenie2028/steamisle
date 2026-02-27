@@ -414,12 +414,15 @@ vector<Game> matchGames(const vector<Game>& archipelago_games, const vector<stri
 
 int main(int argc, char* argv[]) {
 
+    char pause_for_input;
+
     bool cmd_line = true;
     if (argc == 1) {
         cmd_line = false;
     }
     else if (argc != 4) {
         cerr << "ERROR: Invalid Usage. Proper Usage: ./steamisle {steamUserId} {playableWorldsURL} {coreWorldsURL}" << endl;
+        cin >> pause_for_input;
         return 1;
     }
 
@@ -446,11 +449,13 @@ int main(int argc, char* argv[]) {
     
     if (formatted_core == "") {
         cerr << "ERROR: Failed to format core_worlds url." << endl;
+        cin >> pause_for_input;
         return 1;
     }
 
     if (formatted_playable == "") {
         cerr << "ERROR: Failed to format playable_worlds url." << endl;
+        cin >> pause_for_input;
         return 1;
     }
 
@@ -465,6 +470,7 @@ int main(int argc, char* argv[]) {
     if (config.find("api_key") == config.end() || config["api_key"] == "") {
         cerr << "ERROR: No API key found in steamisle.cfg" << endl;
         cerr << "Get a key at: https://steamcommunity.com/dev/apikey" << endl;
+        cin >> pause_for_input;
         return 1;
     }
     string api_key = config["api_key"];
@@ -474,6 +480,7 @@ int main(int argc, char* argv[]) {
     string username = getSteamUsername(user_id, api_key);
     if (username == "") {
         cerr << "ERROR: Steam ID " << user_id << " not found or profile is private." << endl;
+        cin >> pause_for_input;
         return 1;
     }
 
@@ -484,6 +491,7 @@ int main(int argc, char* argv[]) {
     vector<string> library = getSteamLibrary(user_id, api_key);
     if (library.empty()) {
         cerr << "ERROR: Could not fetch Steam Library. Profile or game list may be private." << endl;
+        cin >> pause_for_input;
         return 1;
     }
 
@@ -510,6 +518,7 @@ int main(int argc, char* argv[]) {
     ofstream outfile(outfile_name);
     if (!outfile.is_open()) {
         cerr << "ERROR: Could not open output file: " << outfile_name << endl;
+        cin >> pause_for_input;
         return 1;
     }
 
@@ -528,6 +537,6 @@ int main(int argc, char* argv[]) {
 
     outfile.close();
     cout  << "Results saved to " << outfile_name << endl;
-
+    cin >> pause_for_input;
     return 0;
 }
