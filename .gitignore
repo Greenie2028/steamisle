@@ -35,16 +35,11 @@
 *.lib
 
 # Executables
-*.exe
 *.out
 *.app
 
 # debug information files
 *.dwo
 
-
-# For testing purposes
-# steamisle.cpp
 notes.md
-*.txt
-steamisle.cfg
+test_data.txt
